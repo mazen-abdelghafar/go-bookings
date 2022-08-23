@@ -1,0 +1,1 @@
+insert into public.restrictions (id, restriction_name, created_at, updated_at) values (1, 'Reservation', '2022-05-06', '2022-05-06'), (2, 'Owner Block', '2022-05-06', '2022-05-06');
