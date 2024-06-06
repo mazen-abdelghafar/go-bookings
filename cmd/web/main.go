@@ -6,9 +6,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/alexedwards/scs/v2"
+	"github.com/joho/godotenv"
 	"github.com/kidkever/go-bookings/internal/config"
 	"github.com/kidkever/go-bookings/internal/driver"
 	"github.com/kidkever/go-bookings/internal/handlers"
@@ -60,12 +62,55 @@ func run() (*driver.DB, error) {
 	gob.Register(models.Restriction{})
 	gob.Register(map[string]int{})
 
+	// read flags
+	// inProduction := flag.Bool("production", true, "Application is in production")
+	// useCache := flag.Bool("cache", true, "Use template cache")
+	// dbHost := flag.String("dbhost", "localhost", "Database host")
+	// dbName := flag.String("dbname", "", "Database name")
+	// dbUser := flag.String("dbuser", "", "Database user")
+	// dbPassword := flag.String("dbpassword", "", "Database password")
+	// dbPort := flag.String("dbport", "5432", "Database port")
+	// dbSSL := flag.String("dbssl", "disable", "Database ssl settings (disable, prefer, require)")
+	// flag.Parse()
+	// if *dbName == "" || *dbUser == "" {
+	// 	fmt.Println("Missing required flags")
+	// 	os.Exit(1)
+	// }
+
+	// using env variables instead of cmd flags
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	inProduction, err := strconv.ParseBool(os.Getenv("PRODUCTION"))
+	if err != nil {
+		log.Fatal("Can't parse PRODUCTION env")
+	}
+	useCache, err := strconv.ParseBool(os.Getenv("CACHE"))
+	if err != nil {
+		log.Fatal("Can't parse CACHE env")
+	}
+
+	dbHost := os.Getenv("DBHOST")
+	dbName := os.Getenv("DBNAME")
+	dbUser := os.Getenv("DBUSER")
+	dbPassword := os.Getenv("DBPASSWORD")
+	dbPort := os.Getenv("DBPORT")
+	dbSSL := os.Getenv("DBSSL")
+
+	if dbName == "" || dbUser == "" {
+		fmt.Println("Missing required env variables")
+		os.Exit(1)
+	}
+
 	// creating a mail channel
 	mailChan := make(chan models.MailData)
 	app.MailChan = mailChan
 
 	// change this to true when in production
-	app.InProduction = false
+	app.InProduction = inProduction
+	app.UseCache = useCache
 
 	infoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	app.InfoLog = infoLog
@@ -84,7 +129,8 @@ func run() (*driver.DB, error) {
 
 	// connect to database
 	log.Println("Connecting to database...")
-	db, err := driver.ConnectSQL("host=localhost port=5432 dbname=go-bookings user=postgres password=pass123")
+	connectionString := fmt.Sprintf("host=%s port=%s dbname=%s user=%s password=%s sslmode=%s", dbHost, dbPort, dbName, dbUser, dbPassword, dbSSL)
+	db, err := driver.ConnectSQL(connectionString)
 	if err != nil {
 		log.Fatal("Cannot connect to database! Dying...")
 	}
@@ -97,7 +143,6 @@ func run() (*driver.DB, error) {
 	}
 
 	app.TemplateCache = tc
-	app.UseCache = false
 
 	repo := handlers.NewRepo(&app, db)
 	handlers.NewHandlers(repo)
