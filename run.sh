@@ -1,6 +1,6 @@
 #!/bin/bash
 
-go build -o bookings cmd/web/*.go && ./bookings 
+go build -o bookings cmd/web/*.go && ./bookings -cache=false -production=false
 
 
 # in case of using cmd flags

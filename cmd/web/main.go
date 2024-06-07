@@ -2,11 +2,11 @@ package main
 
 import (
 	"encoding/gob"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/alexedwards/scs/v2"
@@ -63,33 +63,16 @@ func run() (*driver.DB, error) {
 	gob.Register(map[string]int{})
 
 	// read flags
-	// inProduction := flag.Bool("production", true, "Application is in production")
-	// useCache := flag.Bool("cache", true, "Use template cache")
-	// dbHost := flag.String("dbhost", "localhost", "Database host")
-	// dbName := flag.String("dbname", "", "Database name")
-	// dbUser := flag.String("dbuser", "", "Database user")
-	// dbPassword := flag.String("dbpassword", "", "Database password")
-	// dbPort := flag.String("dbport", "5432", "Database port")
-	// dbSSL := flag.String("dbssl", "disable", "Database ssl settings (disable, prefer, require)")
-	// flag.Parse()
-	// if *dbName == "" || *dbUser == "" {
-	// 	fmt.Println("Missing required flags")
-	// 	os.Exit(1)
-	// }
+	inProduction := flag.Bool("production", true, "Application is in production")
+	useCache := flag.Bool("cache", true, "Use template cache")
+	flag.Parse()
 
 	// using env variables instead of cmd flags
-	err := godotenv.Load()
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
-
-	inProduction, err := strconv.ParseBool(os.Getenv("PRODUCTION"))
-	if err != nil {
-		log.Fatal("Can't parse PRODUCTION env")
-	}
-	useCache, err := strconv.ParseBool(os.Getenv("CACHE"))
-	if err != nil {
-		log.Fatal("Can't parse CACHE env")
+	if !*inProduction {
+		err := godotenv.Load()
+		if err != nil {
+			log.Fatal("Error loading .env file")
+		}
 	}
 
 	dbHost := os.Getenv("DBHOST")
@@ -109,8 +92,8 @@ func run() (*driver.DB, error) {
 	app.MailChan = mailChan
 
 	// change this to true when in production
-	app.InProduction = inProduction
-	app.UseCache = useCache
+	app.InProduction = *inProduction
+	app.UseCache = *useCache
 
 	infoLog = log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	app.InfoLog = infoLog
