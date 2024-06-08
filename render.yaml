@@ -1,0 +1,12 @@
+services:
+  - type: web
+    plan: free
+    name: go-bookings-app
+    runtime: go
+    repo: https://github.com/mazen-abdelghafar/go-bookings
+    buildCommand: 'go build -o bookings cmd/web/*.go'
+    startCommand: './bookings'
+
+databases:
+  - name: go-bookings
+    plan: free
